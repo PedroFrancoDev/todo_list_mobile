@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
-class TodoListPage extends StatelessWidget {
+import '../widgets/todo_list_item.dart';
+
+class TodoListPage extends StatefulWidget {
   TodoListPage({super.key});
 
-  final TextEditingController nameController = TextEditingController();
+  @override
+  State<TodoListPage> createState() => _TodoListPageState();
+}
+
+class _TodoListPageState extends State<TodoListPage> {
+  final TextEditingController taskController = TextEditingController();
+
+  List<String> tasks = [];
 
   @override
   Widget build(BuildContext context) {
@@ -45,13 +54,13 @@ class TodoListPage extends StatelessWidget {
   Widget TaskQuantityAnbButtonClearAll() {
     return Padding(
       padding: const EdgeInsets.only(
-            top: 13,
-          ),
+        top: 13,
+      ),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              "Você possui 3 tarefas pendentes",
+              "Você possui ${tasks.length} tarefas pendentes",
               style: TextStyle(
                 fontSize: 16,
               ),
@@ -65,7 +74,7 @@ class TodoListPage extends StatelessWidget {
                 vertical: 14,
               ),
             ),
-            onPressed: () {},
+            onPressed: deleteAllTasks,
             child: Text(
               "Limpar tudo",
               style: TextStyle(
@@ -85,6 +94,7 @@ class TodoListPage extends StatelessWidget {
           child: Container(
             height: 55,
             child: TextField(
+              controller: taskController,
               decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 labelStyle: TextStyle(
@@ -106,7 +116,7 @@ class TodoListPage extends StatelessWidget {
             fixedSize: Size(55, 55),
             primary: Color(0xff2da84e),
           ),
-          onPressed: () {},
+          onPressed: AddTaskToList,
           child: Icon(
             Icons.add,
             size: 25,
@@ -118,9 +128,28 @@ class TodoListPage extends StatelessWidget {
 
   Widget ListTask() {
     return Expanded(
-      child: Wrap(
-        children: [],
+      child: ListView(
+        children: [
+          for (String task in tasks)
+            TodoListItem(task: task),
+        ],
       ),
     );
+  }
+
+  void AddTaskToList() {
+    String newTask = taskController.text;
+
+    setState(() {
+      tasks.add(newTask);
+    });
+
+    taskController.clear();
+  }
+
+  void deleteAllTasks() {
+    setState(() {
+      tasks.clear();
+    });
   }
 }
