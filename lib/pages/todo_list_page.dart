@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/task.dart';
+import '../widgets/text_field.dart';
 import '../widgets/todo_list_item.dart';
 
 class TodoListPage extends StatefulWidget {
@@ -10,9 +12,12 @@ class TodoListPage extends StatefulWidget {
 }
 
 class _TodoListPageState extends State<TodoListPage> {
-  final TextEditingController taskController = TextEditingController();
+  List<TaskModel> tasks = [];
+  TaskModel? deletedTask;
+  int? deletedIndexTask;
 
-  List<String> tasks = [];
+  final TextEditingController taskController = TextEditingController();
+  final TextEditingController taskEditController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,16 @@ class _TodoListPageState extends State<TodoListPage> {
         color: Colors.white,
         child: Column(
           children: [
-            AddTaskArea(),
+            TextFieldCostumized(
+              buttonIcon: Icons.add,
+              function: AddTaskToList,
+              background: Color(0xff2da84e),
+              taskController: taskController,
+              labelText: "Adicionar uma tarefa",
+            ),
+            SizedBox(
+              height: 30,
+            ),
             ListTask(),
             Divider(
               color: Colors.black,
@@ -87,62 +101,33 @@ class _TodoListPageState extends State<TodoListPage> {
     );
   }
 
-  Widget AddTaskArea() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 55,
-            child: TextField(
-              controller: taskController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelStyle: TextStyle(
-                  color: Colors.black,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w400,
-                ),
-                hintText: "Ex.: Estudar back-end",
-                labelText: "Adicione uma tarefa",
-              ),
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 8,
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            fixedSize: Size(55, 55),
-            primary: Color(0xff2da84e),
-          ),
-          onPressed: AddTaskToList,
-          child: Icon(
-            Icons.add,
-            size: 25,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget ListTask() {
     return Expanded(
       child: ListView(
         children: [
-          for (String task in tasks)
-            TodoListItem(task: task),
+          for (TaskModel task in tasks)
+            TodoListItem(
+              newTask: task,
+              deleteTask: deleteTask,
+              editTask: editTask,
+              taskEditController: taskEditController,
+            ),
         ],
       ),
     );
   }
 
   void AddTaskToList() {
-    String newTask = taskController.text;
+    if (taskController.text.isNotEmpty) {
+      setState(() {
+        TaskModel newTask = TaskModel(
+          dateTime: DateTime.now(),
+          title: taskController.text,
+        );
 
-    setState(() {
-      tasks.add(newTask);
-    });
+        tasks.add(newTask);
+      });
+    }
 
     taskController.clear();
   }
@@ -151,5 +136,83 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       tasks.clear();
     });
+  }
+
+  void deleteTask(TaskModel task) {
+    setState(
+      () {
+        tasks.where((taskList) => taskList.id == task.id).forEach(
+          (e) {
+            deletedTask = e;
+            deletedIndexTask = tasks.indexOf(e);
+          },
+        );
+
+        tasks.removeWhere(
+          (taskList) => taskList.id == task.id,
+        );
+      },
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(
+          child: Text('Tarefa "${task.title}" foi removida com sucesso!'),
+        ),
+        backgroundColor: Colors.red.shade400,
+        action: SnackBarAction(
+          label: "Desfazer",
+          backgroundColor: Colors.red.shade300,
+          textColor: Colors.white,
+          onPressed: () {
+              setState(() {
+                tasks.insert(deletedIndexTask!, deletedTask!);
+              });
+          },
+        ),
+      ),
+    );
+  }
+
+  void editTask(TaskModel task) {
+    if (taskEditController.text.isNotEmpty) {
+      setState(
+        () {
+          tasks
+              .where(
+            (taskList) => taskList.id == task.id,
+          )
+              .forEach((e) {
+            e.title = taskEditController.text;
+          });
+        },
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "Tarefa editada com sucesso ",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              Icon(
+                Icons.check,
+                size: 20,
+                color: Colors.white,
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xff2da84e),
+        ),
+      );
+
+      taskEditController.clear();
+      Navigator.pop(context);
+    }
   }
 }
