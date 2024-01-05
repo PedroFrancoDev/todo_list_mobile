@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:todo_list/repositories/tasks_repository.dart';
+import 'package:todo_list/validation/task_validate.dart';
 
 import '../models/task.dart';
 import '../widgets/text_field.dart';
@@ -18,6 +20,22 @@ class _TodoListPageState extends State<TodoListPage> {
 
   final TextEditingController taskController = TextEditingController();
   final TextEditingController taskEditController = TextEditingController();
+  final TasksRepository tasksRepository = TasksRepository();
+  final TaskValidate taskValidate = TaskValidate();
+  bool? errorText;
+
+  @override
+  void initState() {
+    super.initState();
+
+    tasksRepository.getTaskListToSharedPreferences().then(
+          (value) => setState(
+            () {
+              tasks = value;
+            },
+          ),
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +67,7 @@ class _TodoListPageState extends State<TodoListPage> {
               background: Color(0xff2da84e),
               taskController: taskController,
               labelText: "Adicionar uma tarefa",
+              errorTask: errorText,
             ),
             SizedBox(
               height: 30,
@@ -88,7 +107,8 @@ class _TodoListPageState extends State<TodoListPage> {
                 vertical: 14,
               ),
             ),
-            onPressed: deleteAllTasks,
+            onPressed:
+                tasks.isNotEmpty ? _showDeleteAllTasksConfirmationDialog : null,
             child: Text(
               "Limpar tudo",
               style: TextStyle(
@@ -118,21 +138,33 @@ class _TodoListPageState extends State<TodoListPage> {
   }
 
   void AddTaskToList() {
-    if (taskController.text.isNotEmpty) {
-      setState(() {
-        TaskModel newTask = TaskModel(
-          dateTime: DateTime.now(),
-          title: taskController.text,
-        );
+    bool isTrue = taskValidate.validationValue(taskController.text);
 
-        tasks.add(newTask);
-      });
+    setState(
+      () {
+        errorText = isTrue;
+      },
+    );
+
+    if (errorText!) {
+      setState(
+        () {
+          TaskModel newTask = TaskModel(
+            dateTime: DateTime.now(),
+            title: taskController.text,
+          );
+
+          tasks.add(newTask);
+        },
+      );
     }
+
+    tasksRepository.saveTasksListToSharedPreferences(tasks);
 
     taskController.clear();
   }
 
-  void deleteAllTasks() {
+  void _deleteAllTasks() {
     setState(() {
       tasks.clear();
     });
@@ -142,20 +174,25 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(
       () {
         tasks.where((taskList) => taskList.id == task.id).forEach(
-          (e) {
-            deletedTask = e;
-            deletedIndexTask = tasks.indexOf(e);
+          (taskElement) {
+            deletedTask = taskElement;
+            deletedIndexTask = tasks.indexOf(taskElement);
           },
         );
 
         tasks.removeWhere(
           (taskList) => taskList.id == task.id,
         );
+
+        tasksRepository.saveTasksListToSharedPreferences(tasks);
       },
     );
 
+    ScaffoldMessenger.of(context).clearSnackBars();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: Duration(seconds: 5),
         content: Center(
           child: Text('Tarefa "${task.title}" foi removida com sucesso!'),
         ),
@@ -165,9 +202,9 @@ class _TodoListPageState extends State<TodoListPage> {
           backgroundColor: Colors.red.shade300,
           textColor: Colors.white,
           onPressed: () {
-              setState(() {
-                tasks.insert(deletedIndexTask!, deletedTask!);
-              });
+            setState(() {
+              tasks.insert(deletedIndexTask!, deletedTask!);
+            });
           },
         ),
       ),
@@ -184,6 +221,7 @@ class _TodoListPageState extends State<TodoListPage> {
           )
               .forEach((e) {
             e.title = taskEditController.text;
+            tasksRepository.saveTasksListToSharedPreferences(tasks);
           });
         },
       );
@@ -214,5 +252,49 @@ class _TodoListPageState extends State<TodoListPage> {
       taskEditController.clear();
       Navigator.pop(context);
     }
+  }
+
+  _showDeleteAllTasksConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Limpar tudo?"),
+          content:
+              Text("Você tem certeza de que deseja apagar todas as tarefas?"),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                fixedSize: Size(80, -10),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancelar",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.blueAccent,
+                ),
+              ),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                primary: Colors.red,
+              ),
+              onPressed: () {
+                _deleteAllTasks();
+                tasksRepository.saveTasksListToSharedPreferences(tasks);
+                Navigator.pop(context);
+              },
+              child: Text(
+                "Apagar",
+                style: TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -78,10 +78,7 @@ class TodoListItem extends StatelessWidget {
               context: context,
               builder: (context) {
                 return Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 40,
-                  ),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                   ),
@@ -89,12 +86,50 @@ class TodoListItem extends StatelessWidget {
                     padding: EdgeInsets.only(
                       bottom: MediaQuery.of(context).viewInsets.bottom,
                     ),
-                    child: TextFieldCostumized(
-                      background: Colors.blueAccent,
-                      function: () => editTask(newTask),
-                      buttonIcon: Icons.edit,
-                      taskController: taskEditController,
-                      labelText: "Editar tarefa",
+                    child: Container(
+                      child: Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: MediaQuery.of(context).size.width,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Descrição da tarefa a editar: ",
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 9,
+                                  ),
+                                  Text(newTask.title),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            TextFieldCostumized(
+                              background: Colors.blueAccent,
+                              function: () => editTask(newTask),
+                              buttonIcon: Icons.edit,
+                              taskController: taskEditController,
+                              labelText: "Editar tarefa",
+                              errorTask: true,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );
